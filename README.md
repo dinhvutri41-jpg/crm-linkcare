@@ -39,6 +39,25 @@ curl -X POST -H "x-api-key: $CRM_API_KEY" -H "content-type: application/json" -d
 
 Response `/api/complaints` có `rows`, `total`, `page`, `pageSize`. API giới hạn `pageSize` tối đa 100 và dùng query parameterized qua Drizzle.
 
+## CRUD API
+
+Dashboard cho phép tạo, sửa và xoá từng dòng dữ liệu. Các project khác có thể dùng cùng API với `x-api-key` hoặc `Authorization: Bearer ...`:
+
+```bash
+# Lấy một booking để map dữ liệu cho vipbooking24h111lct
+curl -H "x-api-key: $CRM_API_KEY" "https://your-crm.vercel.app/api/complaints?bookingCode=BOOKING_CODE"
+
+# Sửa một bản ghi
+curl -X PATCH -H "x-api-key: $CRM_API_KEY" -H "content-type: application/json" \
+	-d '{"project":"LinkCare","receivedDate":"2026-09-12","bookingCode":"BOOKING_CODE","customer":"Nguyen Van A"}' \
+	https://your-crm.vercel.app/api/complaints/1
+
+# Xoá một bản ghi
+curl -X DELETE -H "x-api-key: $CRM_API_KEY" https://your-crm.vercel.app/api/complaints/1
+```
+
+`GET /api/complaints` trả về đầy đủ các cột: `project`, `receivedDate`, `customer`, `bookingCode`, `privilege`, `usageDate`, `provider`, `complaintContent`, `resolution`, `compensation`, `damage`, `errorType`, `sourceSheet`, `month`.
+
 ## Vercel
 
 Import folder này như một project riêng, thêm:

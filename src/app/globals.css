@@ -4,3 +4,5 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: #edf3ff; color: var(--ink); font-family: "DM Sans", "Segoe UI", sans-serif; }
 button, input, select { font: inherit; }
+@keyframes toast-enter { from { opacity: 0; transform: translateY(-10px) translateX(12px); } to { opacity: 1; transform: translateY(0) translateX(0); } }
+.toast-notification { animation: toast-enter 220ms ease-out both; }

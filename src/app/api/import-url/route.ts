@@ -19,8 +19,9 @@ function spreadsheetExportUrl(input: string): string | null {
     if (url.hostname !== "docs.google.com") return null;
     const match = url.pathname.match(/\/spreadsheets\/d\/([^/]+)/);
     if (!match) return null;
-    const gid = url.searchParams.get("gid") || "0";
-    return `https://docs.google.com/spreadsheets/d/${encodeURIComponent(match[1])}/export?format=xlsx&gid=${encodeURIComponent(gid)}`;
+    const gid = url.searchParams.get("gid");
+    const suffix = gid ? `&gid=${encodeURIComponent(gid)}` : "";
+    return `https://docs.google.com/spreadsheets/d/${encodeURIComponent(match[1])}/export?format=xlsx${suffix}`;
   } catch {
     return null;
   }

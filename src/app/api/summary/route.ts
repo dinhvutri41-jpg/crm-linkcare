@@ -6,6 +6,8 @@ function authorized(request: NextRequest): boolean {
   if (!expected) return process.env.NODE_ENV !== "production";
   const origin = request.headers.get("origin");
   if (origin && origin === request.nextUrl.origin) return true;
+  const referer = request.headers.get("referer");
+  if (referer && referer.startsWith(`${request.nextUrl.origin}/`)) return true;
   return request.headers.get("x-api-key") === expected || request.headers.get("authorization") === `Bearer ${expected}`;
 }
 
