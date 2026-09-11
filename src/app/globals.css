@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+:root { --ink: #10243d; --primary: #123d7a; --soft: #e7f0ff; --line: #d7e2f1; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #edf3ff; color: var(--ink); font-family: "DM Sans", "Segoe UI", sans-serif; }
+button, input, select { font: inherit; }
