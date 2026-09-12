@@ -16,7 +16,12 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const page = Math.max(1, Number(searchParams.get("page") || 1));
   const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") || 20)));
-  const result = await listComplaints({ page, pageSize, search: searchParams.get("search") || undefined, month: searchParams.get("month") || undefined, project: searchParams.get("project") || undefined, provider: searchParams.get("provider") || undefined, bookingCode: searchParams.get("bookingCode") || undefined });
+  const receivedFrom = searchParams.get("receivedFrom") || undefined;
+  const receivedTo = searchParams.get("receivedTo") || undefined;
+  const project = searchParams.get("project") || undefined;
+  const privilege = searchParams.get("privilege") || undefined;
+  if (receivedFrom && receivedTo && receivedFrom > receivedTo) return NextResponse.json({ error: "Khoảng ngày tiếp nhận không hợp lệ" }, { status: 400 });
+  const result = await listComplaints({ page, pageSize, search: searchParams.get("search") || undefined, month: searchParams.get("month") || undefined, project, privilege, provider: searchParams.get("provider") || undefined, bookingCode: searchParams.get("bookingCode") || undefined, receivedFrom, receivedTo });
   return NextResponse.json(result);
 }
 

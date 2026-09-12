@@ -41,10 +41,13 @@ export function parseComplaintWorkbook(buffer: ArrayBuffer, sourceSheet: string)
     const usageIndex = indexOf(headers, "lich su dung");
     const providerIndex = indexOf(headers, "nha cung cap");
     const complaintIndex = indexOf(headers, "noi dung", "khieu nai");
+    const cskhExplanationIndex = indexOf(headers, "cskh", "giai trinh dien bien");
+    const responsibleEmployeeIndex = indexOf(headers, "nhan vien phu trach");
     const resolutionIndex = indexOf(headers, "ket qua xu ly");
     const compensationIndex = indexOf(headers, "qua tang den bu");
     const damageIndex = indexOf(headers, "thiet hai");
     const errorTypeIndex = indexOf(headers, "phan loai loi");
+    const improvementProposalIndex = indexOf(headers, "de xuat cai tien");
     let currentProject = "Không xác định";
 
     for (let rowIndex = headerRow + 1; rowIndex < rows.length; rowIndex += 1) {
@@ -64,10 +67,13 @@ export function parseComplaintWorkbook(buffer: ArrayBuffer, sourceSheet: string)
         usageDate: text(row[usageIndex]),
         provider: text(row[providerIndex]),
         complaintContent: text(row[complaintIndex]),
+        cskhExplanation: text(row[cskhExplanationIndex]),
+        responsibleEmployee: text(row[responsibleEmployeeIndex]),
         resolution: text(row[resolutionIndex]),
         compensation: text(row[compensationIndex]),
         damage: text(row[damageIndex]),
         errorType: text(row[errorTypeIndex]),
+        improvementProposal: text(row[improvementProposalIndex]),
       });
     }
   }

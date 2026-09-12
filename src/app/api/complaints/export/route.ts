@@ -17,7 +17,7 @@ function authorized(request: NextRequest): boolean {
 const headers: Record<string, string> = {
   sourceSheet: "Nguồn sheet", project: "Dự án", receivedDate: "Ngày tiếp nhận", month: "Tháng", customer: "Thông tin khách hàng",
   bookingCode: "Mã booking", privilege: "Loại đặc quyền", usageDate: "Lịch sử dụng", provider: "Nhà cung cấp", complaintContent: "Nội dung khiếu nại",
-  resolution: "Kết quả xử lý", compensation: "Quà tặng / đền bù", damage: "Thiệt hại", errorType: "Phân loại lỗi",
+  cskhExplanation: "CSKH giải trình diễn biến", responsibleEmployee: "Nhân viên phụ trách / kết quả vi phạm / đã lập biên bản?", resolution: "Kết quả xử lý", compensation: "Quà tặng / đền bù", damage: "Thiệt hại", errorType: "Phân loại lỗi", improvementProposal: "Đề xuất cải tiến", managementOpinion: "Ý kiến quản lý", teamLeaderOpinion: "Ý kiến Team Leader",
 };
 
 export async function GET(request: NextRequest) {

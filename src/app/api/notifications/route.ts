@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { complaintSummary } from "@/lib/complaints";
+import { listManagementNotifications } from "@/lib/complaints";
 
 function authorized(request: NextRequest): boolean {
   const expected = process.env.CRM_API_KEY?.trim();
@@ -13,10 +13,6 @@ function authorized(request: NextRequest): boolean {
 
 export async function GET(request: NextRequest) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const from = request.nextUrl.searchParams.get("from") || undefined;
-  const to = request.nextUrl.searchParams.get("to") || undefined;
-  const project = request.nextUrl.searchParams.get("project") || undefined;
-  const privilege = request.nextUrl.searchParams.get("privilege") || undefined;
-  if (from && to && from > to) return NextResponse.json({ error: "Khoảng ngày không hợp lệ" }, { status: 400 });
-  return NextResponse.json(await complaintSummary({ from, to, project, privilege }));
+  const notifications = await listManagementNotifications();
+  return NextResponse.json({ count: notifications.length, notifications });
 }

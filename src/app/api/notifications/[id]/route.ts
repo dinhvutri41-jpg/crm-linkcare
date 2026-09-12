@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { complaintSummary } from "@/lib/complaints";
+import { resolveManagementNotification } from "@/lib/complaints";
 
 function authorized(request: NextRequest): boolean {
   const expected = process.env.CRM_API_KEY?.trim();
@@ -11,12 +11,10 @@ function authorized(request: NextRequest): boolean {
   return request.headers.get("x-api-key") === expected || request.headers.get("authorization") === `Bearer ${expected}`;
 }
 
-export async function GET(request: NextRequest) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const from = request.nextUrl.searchParams.get("from") || undefined;
-  const to = request.nextUrl.searchParams.get("to") || undefined;
-  const project = request.nextUrl.searchParams.get("project") || undefined;
-  const privilege = request.nextUrl.searchParams.get("privilege") || undefined;
-  if (from && to && from > to) return NextResponse.json({ error: "Khoảng ngày không hợp lệ" }, { status: 400 });
-  return NextResponse.json(await complaintSummary({ from, to, project, privilege }));
+  const id = Number((await context.params).id);
+  if (!Number.isInteger(id) || id < 1) return NextResponse.json({ error: "Invalid notification id" }, { status: 400 });
+  const resolved = await resolveManagementNotification(id);
+  return resolved ? NextResponse.json({ resolved: true, id }) : NextResponse.json({ error: "Notification not found" }, { status: 404 });
 }
