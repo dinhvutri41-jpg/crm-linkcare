@@ -1,14 +1,17 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   CheckCircle2,
   ChevronDown,
   Download,
   FileUp,
+  Loader2,
+  ArrowUp,
   Pencil,
   Plus,
+  RefreshCw,
   Save,
   Search,
   Trash2,
@@ -39,6 +42,7 @@ type Complaint = {
   managementOpinion: string;
   teamLeaderOpinion: string;
   managementResolved: boolean;
+  status: string;
 };
 type ListResult = {
   rows: Complaint[];
@@ -103,6 +107,7 @@ const errorTypes = [
   "Lỗi vận hành",
   "Khác",
 ];
+const statuses = ["Chưa xử lý", "Đang xử lý", "Hoàn thành"];
 
 function blankComplaint(): Complaint {
   const date = new Date().toISOString().slice(0, 10);
@@ -128,6 +133,7 @@ function blankComplaint(): Complaint {
     managementOpinion: "",
     teamLeaderOpinion: "",
     managementResolved: false,
+    status: "Chưa xử lý",
   };
 }
 
@@ -235,6 +241,19 @@ function ErrorTypeField({
   );
 }
 
+function ComplaintCell({ value, wide = false }: { value: string; wide?: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const textRef = useRef<HTMLButtonElement | null>(null);
+  const displayValue = value || "—";
+  useEffect(() => {
+    const element = textRef.current;
+    if (!element) return;
+    setOverflowing(element.scrollHeight > element.clientHeight + 1);
+  }, [value]);
+  return <td className={`${wide ? "min-w-[28rem] max-w-[28rem]" : "max-w-72"} complaint-table-cell px-3 py-3 align-top`}><button ref={textRef} type="button" title={overflowing ? displayValue : undefined} onClick={overflowing ? () => setExpanded((current) => !current) : undefined} className={`complaint-cell-text text-left ${!value ? "text-slate-300" : "text-inherit"} ${overflowing ? "is-overflowing" : ""} ${expanded ? "is-expanded" : ""}`}>{displayValue}</button></td>;
+}
+
 export function ComplaintsCrud() {
   const [rows, setRows] = useState<Complaint[]>([]);
   const [total, setTotal] = useState(0);
@@ -244,6 +263,9 @@ export function ComplaintsCrud() {
   const [receivedTo, setReceivedTo] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
   const [privilegeFilter, setPrivilegeFilter] = useState("");
+  const [hasOpinion, setHasOpinion] = useState(false);
+  const [recordId, setRecordId] = useState(() => typeof window === "undefined" ? 0 : Number(new URLSearchParams(window.location.search).get("recordId") || 0));
+  const [statusFilter, setStatusFilter] = useState("");
   const [draft, setDraft] = useState<Complaint | null>(null);
   const [toast, setToast] = useState<{
     message: string;
@@ -252,6 +274,10 @@ export function ComplaintsCrud() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<HTMLFormElement | null>(null);
 
   function notify(message: string, type: "success" | "error") {
     setToast({ message, type });
@@ -264,33 +290,58 @@ export function ComplaintsCrud() {
 
   async function load() {
     setLoading(true);
-    const query = new URLSearchParams({ page: String(page), pageSize: "20" });
+    const query = new URLSearchParams({ page: String(page), pageSize: "15" });
     if (search) query.set("search", search);
     if (receivedFrom) query.set("receivedFrom", receivedFrom);
     if (receivedTo) query.set("receivedTo", receivedTo);
     if (projectFilter) query.set("project", projectFilter);
     if (privilegeFilter) query.set("privilege", privilegeFilter);
+    if (hasOpinion) query.set("hasOpinion", "true");
+    if (recordId > 0) query.set("recordId", String(recordId));
+    if (statusFilter) query.set("status", statusFilter);
     if (receivedFrom && receivedTo && receivedFrom > receivedTo) {
       notify("Ngày bắt đầu không được lớn hơn ngày kết thúc.", "error");
       setLoading(false);
       return;
     }
     const response = await fetch(`/api/complaints?${query}`);
+    if (page > 1) await new Promise((resolve) => window.setTimeout(resolve, 1200));
     if (response.ok) {
       const data: ListResult = await response.json();
-      setRows(data.rows);
+      setRows((current) => page === 1 ? data.rows : [...current, ...data.rows]);
       setTotal(data.total);
     } else notify("Không thể tải danh sách khiếu nại.", "error");
     setLoading(false);
   }
   useEffect(() => {
     void load();
-  }, [page, search, receivedFrom, receivedTo, projectFilter, privilegeFilter]);
+  }, [page, search, receivedFrom, receivedTo, projectFilter, privilegeFilter, hasOpinion, statusFilter, recordId]);
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 420);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || loading || rows.length >= total) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setPage((current) => current + 1);
+    }, { rootMargin: "240px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loading, rows.length, total]);
 
   useEffect(() => {
     const handleResolved = () => void load();
+    const handleFocus = (event: Event) => {
+      const id = (event as CustomEvent<{ id: number }>).detail?.id;
+      if (id) { setRecordId(id); setPage(1); }
+    };
     window.addEventListener("management-notification-resolved", handleResolved);
-    return () => window.removeEventListener("management-notification-resolved", handleResolved);
+    window.addEventListener("focus-complaint-record", handleFocus);
+    return () => { window.removeEventListener("management-notification-resolved", handleResolved); window.removeEventListener("focus-complaint-record", handleFocus); };
   }, [page, search, receivedFrom, receivedTo, projectFilter, privilegeFilter]);
 
   function change(key: keyof Complaint, value: string) {
@@ -304,6 +355,16 @@ export function ComplaintsCrud() {
         : current,
     );
   }
+  function editComplaint(row: Complaint) {
+    setDraft({ ...row });
+    window.setTimeout(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  }
+  async function updateStatus(row: Complaint, status: string) {
+    const response = await fetch(`/api/complaints/${row.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...row, status }) });
+    if (response.ok) { setRows((current) => current.map((item) => item.id === row.id ? { ...item, status } : item)); notify("Đã cập nhật trạng thái.", "success"); }
+    else notify("Không thể cập nhật trạng thái.", "error");
+  }
+
   async function readResponse(response: Response) {
     const text = await response.text();
     try {
@@ -386,7 +447,14 @@ export function ComplaintsCrud() {
     notify("Đã tải file Excel thành công.", "success");
   }
 
-  const pages = Math.max(1, Math.ceil(total / 20));
+  function scrollToTop() { window.scrollTo({ top: 0, behavior: "smooth" }); }
+  function refreshList() {
+    setRefreshing(true);
+    setRecordId(0);
+    setPage(1);
+    window.history.replaceState(null, "", "/complaints");
+    window.setTimeout(() => setRefreshing(false), 500);
+  }
   return (
     <div className="min-h-[calc(100vh-76px)] bg-[#f4f7fb]">
       <div className="mx-auto max-w-[1800px] px-5 py-7 sm:px-8">
@@ -452,6 +520,8 @@ export function ComplaintsCrud() {
         ) : null}
         {draft ? (
           <form
+            ref={editorRef}
+            id="complaint-editor"
             onSubmit={save}
             className="mb-5 rounded-2xl border border-[#d7e2f1] bg-white p-5 shadow-sm"
           >
@@ -556,7 +626,7 @@ export function ComplaintsCrud() {
                 className="inline-flex items-center gap-2 rounded-lg bg-[#24618f] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />
-                {saving ? "Đang lưu..." : "Lưu record"}
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-label="Đang lưu" /> : "Lưu record"}
               </button>
             </div>
           </form>
@@ -564,9 +634,7 @@ export function ComplaintsCrud() {
         <section className="rounded-2xl border border-[#d7e2f1] bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-4 flex flex-col gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-[#173554]">
-                Danh sách khiếu nại
-              </h3>
+              <div className="flex items-center gap-3"><h3 className="text-lg font-semibold text-[#173554]">Danh sách khiếu nại</h3><button type="button" onClick={refreshList} className="rounded-lg p-2 text-[#24618f] hover:bg-[#eaf4fb]" title="Làm mới danh sách" aria-label="Làm mới danh sách"> <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /></button></div>
               <p className="mt-1 text-xs text-slate-500">
                 {total} record đã lưu trong database
               </p>
@@ -598,6 +666,11 @@ export function ComplaintsCrud() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input value={search} onChange={(event) => { setPage(1); setSearch(event.target.value); }} placeholder="Tìm khiếu nại..." className="h-10 w-full box-border rounded-lg border border-[#d7e2f1] py-2 pl-9 pr-3 text-sm leading-5 sm:w-72" />
               </label>
+              <label className="flex h-10 items-center gap-2 rounded-lg border border-[#d7e2f1] bg-white px-3 text-sm font-medium text-slate-600">
+                <input type="checkbox" checked={hasOpinion} onChange={(event) => { setPage(1); setHasOpinion(event.target.checked); }} className="h-4 w-4 accent-[#24618f]" />
+                Khiếu nại có ý kiến
+              </label>
+              <label className="text-xs font-medium text-slate-500">Trạng thái<select value={statusFilter} onChange={(event) => { setPage(1); setStatusFilter(event.target.value); }} className="mt-1 h-10 w-full rounded-lg border border-[#d7e2f1] bg-white px-3 text-sm font-normal text-slate-700 sm:w-36"><option value="">Tất cả trạng thái</option>{statuses.map((status) => <option key={status}>{status}</option>)}</select></label>
             </div>
           </div>
           <div className="overflow-x-auto rounded-xl border border-[#e5ebf2]">
@@ -610,7 +683,7 @@ export function ComplaintsCrud() {
                   {fields.map((field) => (
                     <th
                       key={field.key}
-                      className="min-w-36 px-3 py-3 font-medium"
+                      className={`${field.key === "complaintContent" ? "min-w-[28rem]" : "min-w-36"} px-3 py-3 font-medium`}
                     >
                       {field.label}
                     </th>
@@ -619,12 +692,14 @@ export function ComplaintsCrud() {
               </thead>
               <tbody className="divide-y divide-[#e5ebf2]">
                 {rows.map((row) => (
-                  <tr key={row.id} className={(row.managementOpinion.trim() || row.teamLeaderOpinion.trim()) && !row.managementResolved ? "complaint-management-row" : undefined}>
+                  <tr key={row.id}>
                     <td className="sticky left-0 z-[1] whitespace-nowrap bg-white px-3 py-3 shadow-[6px_0_10px_-10px_rgba(15,23,42,.35)]">
+                      <div className="flex flex-col items-start gap-1">
+                        <div className="flex items-center gap-1">
                       <button
                         title="Sửa"
-                        onClick={() => setDraft({ ...row })}
-                        className="mr-1 rounded-lg p-2 text-[#24618f] hover:bg-[#eaf4fb]"
+                        onClick={() => editComplaint(row)}
+                        className="rounded-lg p-2 text-[#24618f] hover:bg-[#eaf4fb]"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -635,12 +710,11 @@ export function ComplaintsCrud() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
+                        </div>
+                        <select aria-label="Trạng thái xử lý" value={row.status || "Chưa xử lý"} onChange={(event) => void updateStatus(row, event.target.value)} className={`h-8 rounded-md border px-2 text-xs font-medium text-slate-800 ${row.status === "Đang xử lý" ? "border-amber-300 bg-amber-100" : row.status === "Hoàn thành" ? "border-emerald-300 bg-emerald-100" : "border-red-300 bg-red-100"}`}><option value="Chưa xử lý">Chưa xử lý</option><option value="Đang xử lý">Đang xử lý</option><option value="Hoàn thành">Hoàn thành</option></select>
+                      </div>
                     </td>
-                    {fields.map((field) => (
-                      <td key={field.key} className="max-w-72 px-3 py-3 align-top">
-                        {row[field.key] || <span className="text-slate-300">—</span>}
-                      </td>
-                    ))}
+                    {fields.map((field) => <ComplaintCell key={field.key} value={String(row[field.key] ?? "")} wide={field.key === "complaintContent"} />)}
                   </tr>
                 ))}
                 {!loading && rows.length === 0 ? (
@@ -656,30 +730,12 @@ export function ComplaintsCrud() {
               </tbody>
             </table>
           </div>
-          <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-            <span>{loading ? "Đang tải..." : `${total} record`}</span>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((value) => value - 1)}
-                className="rounded-lg border border-[#d7e2f1] px-3 py-2 disabled:opacity-40"
-              >
-                Trước
-              </button>
-              <span>
-                {page} / {pages}
-              </span>
-              <button
-                disabled={page >= pages}
-                onClick={() => setPage((value) => value + 1)}
-                className="rounded-lg border border-[#d7e2f1] px-3 py-2 disabled:opacity-40"
-              >
-                Sau
-              </button>
-            </div>
+          <div ref={loadMoreRef} className="flex min-h-12 items-center justify-center py-3 text-sm text-slate-500">
+            {loading ? <Loader2 className="h-8 w-8 animate-spin" aria-label="Đang tải thêm" /> : rows.length >= total && total > 0 ? "Đã hiển thị toàn bộ record" : null}
           </div>
         </section>
       </div>
+      {showScrollTop ? <button type="button" onClick={scrollToTop} className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-[#24618f] text-white shadow-lg transition hover:bg-[#1d527d]" aria-label="Cuộn lên đầu trang"><ArrowUp className="h-5 w-5" /></button> : null}
       <ComplaintsReport open={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   );

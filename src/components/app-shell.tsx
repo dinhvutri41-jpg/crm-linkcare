@@ -8,7 +8,9 @@ import {
   ChevronRight,
   Database,
   FileWarning,
+  GraduationCap,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Menu,
   Settings,
@@ -28,9 +30,13 @@ type ManagementNotification = {
   updatedAt: string;
 };
 
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const LAST_ACTIVITY_KEY = "linkcare_last_activity";
+
 const navigation = [
   { href: "/", label: "Tổng quan", icon: LayoutDashboard },
   { href: "/complaints", label: "Khiếu nại", icon: FileWarning },
+  { href: "/learning", label: "E-learning", icon: GraduationCap },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -64,6 +70,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    let lastPersisted = 0;
+    let expired = false;
+
+    const logoutForIdle = async () => {
+      if (expired) return;
+      expired = true;
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.assign("/login?reason=idle");
+    };
+
+    const storedActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+    if (storedActivity && Date.now() - storedActivity >= IDLE_TIMEOUT_MS) {
+      void logoutForIdle();
+      return;
+    }
+
+    const markActivity = () => {
+      const now = Date.now();
+      if (now - lastPersisted < 10_000) return;
+      lastPersisted = now;
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+    };
+    markActivity();
+
+    const activityEvents = ["click", "keydown", "mousemove", "scroll", "touchstart"] as const;
+    activityEvents.forEach((event) => window.addEventListener(event, markActivity, { passive: true }));
+    const idleCheck = window.setInterval(() => {
+      const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+      if (lastActivity && Date.now() - lastActivity >= IDLE_TIMEOUT_MS) void logoutForIdle();
+    }, 15_000);
+
+    return () => {
+      window.clearInterval(idleCheck);
+      activityEvents.forEach((event) => window.removeEventListener(event, markActivity));
+    };
+  }, []);
+
   async function resolveNotification() {
     if (!selectedNotification) return;
     setResolving(true);
@@ -79,6 +124,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.assign("/login");
+  }
+
+  function closeNotificationDetail() {
+    if (!selectedNotification) return;
+    const id = selectedNotification.id;
+    setSelectedNotification(null);
+    if (pathname === "/complaints") window.dispatchEvent(new CustomEvent("focus-complaint-record", { detail: { id } }));
+    else window.location.assign(`/complaints?recordId=${id}`);
   }
 
   return (
@@ -180,12 +233,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div>
               <p className="text-xs font-medium text-slate-400">
                 LinkCare CRM /{" "}
-                {pathname === "/complaints" ? "Khiếu nại" : "Tổng quan"}
+                {pathname === "/complaints" ? "Khiếu nại" : pathname.startsWith("/learning") ? "E-learning" : "Tổng quan"}
               </p>
               <h1 className="mt-0.5 text-lg font-semibold text-[#173554]">
                 {pathname === "/complaints"
                   ? "Quản lý khiếu nại"
-                  : "Tổng quan vận hành"}
+                  : pathname.startsWith("/learning") ? "Đào tạo nội bộ" : "Tổng quan vận hành"}
               </h1>
             </div>
           </div>
@@ -250,18 +303,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             {item.customer || "Không có thông tin khách hàng"}
                           </p>
                         </div>
-                        <span className="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800">
-                          {item.teamLeaderOpinion.trim() ? "Ý kiến Team Leader" : "Ý kiến quản lý"}
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-700">
+                          {item.teamLeaderOpinion.trim() && item.managementOpinion.trim() ? "2 ý kiến" : item.teamLeaderOpinion.trim() ? "Ý kiến Team Leader" : "Ý kiến quản lý"}
                         </span>
                       </div>
-                      <div className="mt-3 rounded-lg bg-[#fff9db] p-3">
-                        <p className="text-xs font-semibold text-amber-900">
-                          Nội dung ý kiến
-                        </p>
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-amber-950">
-                          {item.teamLeaderOpinion.trim() || item.managementOpinion}
-                        </p>
-                      </div>
+                      {item.teamLeaderOpinion.trim() ? <div className="mt-3 rounded-lg bg-[#fff9db] p-3"><p className="text-xs font-semibold text-amber-900">Ý kiến Team Leader</p><p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-amber-950">{item.teamLeaderOpinion}</p></div> : null}
+                      {item.managementOpinion.trim() ? <div className="mt-3 rounded-lg bg-[#e7f5ff] p-3"><p className="text-xs font-semibold text-sky-900">Ý kiến quản lý</p><p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-sky-950">{item.managementOpinion}</p></div> : null}
                       {item.complaintContent ? (
                         <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">
                           <b>Nội dung khiếu nại:</b> {item.complaintContent}
@@ -278,11 +325,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           ) : null}
           {selectedNotification ? (
-            <div className="fixed inset-0 z-[70] flex min-h-screen items-center justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-[2px]" onClick={() => setSelectedNotification(null)} role="presentation">
+            <div className="fixed inset-0 z-[70] flex min-h-screen items-center justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-[2px]" onClick={() => closeNotificationDetail()} role="presentation">
               <div className="relative my-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="notification-detail-title">
-                <div className="flex items-center justify-between border-b border-[#e6edf3] px-5 py-4"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-amber-600">Chi tiết thông báo</p><h2 id="notification-detail-title" className="mt-1 text-xl font-semibold text-[#173554]">{selectedNotification.project} · {selectedNotification.bookingCode || "Không có booking"}</h2></div><button onClick={() => setSelectedNotification(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Đóng chi tiết"><X className="h-5 w-5" /></button></div>
-                <div className="space-y-4 px-5 py-5 text-sm"><div className="grid gap-3 sm:grid-cols-2"><Info label="Dự án" value={selectedNotification.project} /><Info label="Mã booking" value={selectedNotification.bookingCode || "Không có"} /><Info label="Ngày tiếp nhận" value={selectedNotification.receivedDate} /><Info label="Khách hàng" value={selectedNotification.customer || "Không có"} /></div>{selectedNotification.managementOpinion.trim() ? <section className="rounded-xl bg-[#fff9db] p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-amber-900">Ý kiến quản lý</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-amber-950">{selectedNotification.managementOpinion}</p></section> : null}{selectedNotification.teamLeaderOpinion.trim() ? <section className="rounded-xl bg-[#fff4d6] p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-amber-900">Ý kiến Team Leader</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-amber-950">{selectedNotification.teamLeaderOpinion}</p></section> : null}<section><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nội dung khiếu nại</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-slate-700">{selectedNotification.complaintContent || "Không có nội dung"}</p></section></div>
-                <div className="flex justify-end gap-2 border-t border-[#e6edf3] px-5 py-4"><button onClick={() => setSelectedNotification(null)} className="rounded-lg border border-[#d7e2f1] px-4 py-2 text-sm font-medium text-slate-600">Đóng</button><button onClick={() => void resolveNotification()} disabled={resolving} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{resolving ? "Đang cập nhật..." : "Đã resolve"}</button></div>
+                <div className="flex items-center justify-between border-b border-[#e6edf3] px-5 py-4"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-amber-600">Chi tiết thông báo</p><h2 id="notification-detail-title" className="mt-1 text-xl font-semibold text-[#173554]">{selectedNotification.project} · {selectedNotification.bookingCode || "Không có booking"}</h2></div><button onClick={() => closeNotificationDetail()} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Đóng chi tiết"><X className="h-5 w-5" /></button></div>
+                <div className="space-y-4 px-5 py-5 text-sm"><div className="grid gap-3 sm:grid-cols-2"><Info label="Dự án" value={selectedNotification.project} /><Info label="Mã booking" value={selectedNotification.bookingCode || "Không có"} /><Info label="Ngày tiếp nhận" value={selectedNotification.receivedDate} /><Info label="Khách hàng" value={selectedNotification.customer || "Không có"} /></div>{selectedNotification.teamLeaderOpinion.trim() ? <section className="rounded-xl bg-[#fff9db] p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-amber-900">Ý kiến Team Leader</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-amber-950">{selectedNotification.teamLeaderOpinion}</p></section> : null}{selectedNotification.managementOpinion.trim() ? <section className="rounded-xl bg-[#e7f5ff] p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-sky-900">Ý kiến quản lý</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-sky-950">{selectedNotification.managementOpinion}</p></section> : null}<section><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nội dung khiếu nại</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-slate-700">{selectedNotification.complaintContent || "Không có nội dung"}</p></section></div>
+                <div className="flex justify-end gap-2 border-t border-[#e6edf3] px-5 py-4"><button onClick={() => closeNotificationDetail()} className="rounded-lg border border-[#d7e2f1] px-4 py-2 text-sm font-medium text-slate-600">Đóng</button><button onClick={() => void resolveNotification()} disabled={resolving} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{resolving ? <Loader2 className="h-4 w-4 animate-spin" aria-label="Đang cập nhật" /> : "Đã resolve"}</button></div>
               </div>
             </div>
           ) : null}

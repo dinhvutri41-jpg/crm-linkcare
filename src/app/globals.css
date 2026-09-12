@@ -15,4 +15,20 @@ button, input, select { font: inherit; }
 .notification-bell-attention { animation: notification-bell-wiggle 3s ease-in-out both; transform-origin: top center; }
 @keyframes mosaic-modal-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
 .mosaic-modal { animation: mosaic-modal-in 200ms ease-out both; }
+.learning-rocket-scroll-layer { position: absolute; top: -.75rem; right: clamp(13rem, 24vw, 20rem); z-index: 0; width: 5.5rem; height: 5.5rem; pointer-events: none; perspective: 700px; }
+.learning-rocket-scroll-logo { display: block; width: 5.5rem; height: 5.5rem; object-fit: contain; filter: drop-shadow(8px 10px 4px rgba(21, 62, 95, .2)); transform: rotate(-24deg) translateZ(0); will-change: transform; }
+.learning-hero > div:not(.learning-rocket-scroll-layer) { position: relative; z-index: 1; }
+@media (max-width: 767px) {
+	.learning-rocket-scroll-layer { top: -.5rem; right: .25rem; width: 4rem; height: 4rem; }
+	.learning-rocket-scroll-logo { width: 4rem; height: 4rem; }
+}
+.learning-flight-track { position: relative; height: 3.25rem; overflow: hidden; border-bottom: 1px solid #d7e2f1; perspective: 480px; }
 .complaint-management-row > td { background-color: #fff9db; }
+.complaint-table-cell { height: 6.5rem; position: relative; }
+.complaint-cell-text { display: -webkit-box; width: 100%; height: 5rem; overflow: hidden; line-height: 1.25rem; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+@media (min-width: 768px) {
+	.complaint-cell-text.is-overflowing:hover { position: absolute; z-index: 5; top: .75rem; left: .75rem; width: calc(100% - 1.5rem); height: auto; max-height: 14rem; overflow: auto; padding: .35rem .5rem; border-radius: .375rem; background: #fff; box-shadow: 0 8px 20px rgba(15, 23, 42, .16); -webkit-line-clamp: unset; }
+}
+@media (max-width: 767px) {
+	.complaint-cell-text.is-expanded { position: absolute; z-index: 5; top: .75rem; left: .75rem; width: calc(100% - 1.5rem); height: auto; max-height: 14rem; overflow: auto; padding: .35rem .5rem; border-radius: .375rem; background: #fff; box-shadow: 0 8px 20px rgba(15, 23, 42, .16); -webkit-line-clamp: unset; }
+}

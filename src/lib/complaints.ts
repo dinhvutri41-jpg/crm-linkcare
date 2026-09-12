@@ -22,6 +22,7 @@ export const complaintFields = [
   "improvementProposal",
   "managementOpinion",
   "teamLeaderOpinion",
+  "status",
 ] as const;
 
 export type ComplaintInput = Pick<NewComplaint, (typeof complaintFields)[number]>;
@@ -51,6 +52,7 @@ export function toComplaintInput(value: unknown): ComplaintInput | null {
     improvementProposal: String(body.improvementProposal ?? "").trim(),
     managementOpinion: String(body.managementOpinion ?? "").trim(),
     teamLeaderOpinion: String(body.teamLeaderOpinion ?? "").trim(),
+    status: String(body.status ?? "Chưa xử lý").trim() || "Chưa xử lý",
   };
 }
 
@@ -81,9 +83,10 @@ export async function complaintSummary(params: { from?: string; to?: string; pro
   };
 }
 
-export async function listComplaints(params: { page: number; pageSize: number; search?: string; month?: string; project?: string; privilege?: string; provider?: string; bookingCode?: string; receivedFrom?: string; receivedTo?: string }) {
+export async function listComplaints(params: { page: number; pageSize: number; recordId?: number; search?: string; month?: string; project?: string; privilege?: string; provider?: string; bookingCode?: string; receivedFrom?: string; receivedTo?: string; hasOpinion?: boolean; status?: string }) {
   const db = getDb();
   const conditions = [];
+  if (params.recordId) conditions.push(eq(complaints.id, params.recordId));
   if (params.search) {
     const value = `%${params.search}%`;
     conditions.push(or(ilike(complaints.project, value), ilike(complaints.receivedDate, value), ilike(complaints.customer, value), ilike(complaints.bookingCode, value), ilike(complaints.privilege, value), ilike(complaints.usageDate, value), ilike(complaints.provider, value), ilike(complaints.complaintContent, value), ilike(complaints.cskhExplanation, value), ilike(complaints.responsibleEmployee, value), ilike(complaints.resolution, value), ilike(complaints.compensation, value), ilike(complaints.damage, value), ilike(complaints.errorType, value), ilike(complaints.improvementProposal, value)));
@@ -95,6 +98,8 @@ export async function listComplaints(params: { page: number; pageSize: number; s
   if (params.bookingCode) conditions.push(eq(complaints.bookingCode, params.bookingCode));
   if (params.receivedFrom) conditions.push(gte(complaints.receivedDate, params.receivedFrom));
   if (params.receivedTo) conditions.push(lte(complaints.receivedDate, params.receivedTo));
+  if (params.hasOpinion) conditions.push(sql`(trim(${complaints.managementOpinion}) <> '' or trim(${complaints.teamLeaderOpinion}) <> '')`);
+  if (params.status) conditions.push(eq(complaints.status, params.status));
   const where = conditions.length ? sql.join(conditions, sql` and `) : undefined;
   const offset = (params.page - 1) * params.pageSize;
   const [rows, total] = await Promise.all([

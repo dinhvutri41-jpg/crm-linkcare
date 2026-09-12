@@ -20,8 +20,12 @@ export async function GET(request: NextRequest) {
   const receivedTo = searchParams.get("receivedTo") || undefined;
   const project = searchParams.get("project") || undefined;
   const privilege = searchParams.get("privilege") || undefined;
+  const hasOpinion = searchParams.get("hasOpinion") === "true";
+  const status = searchParams.get("status") || undefined;
+  const recordIdValue = Number(searchParams.get("recordId") || 0);
+  const recordId = Number.isInteger(recordIdValue) && recordIdValue > 0 ? recordIdValue : undefined;
   if (receivedFrom && receivedTo && receivedFrom > receivedTo) return NextResponse.json({ error: "Khoảng ngày tiếp nhận không hợp lệ" }, { status: 400 });
-  const result = await listComplaints({ page, pageSize, search: searchParams.get("search") || undefined, month: searchParams.get("month") || undefined, project, privilege, provider: searchParams.get("provider") || undefined, bookingCode: searchParams.get("bookingCode") || undefined, receivedFrom, receivedTo });
+  const result = await listComplaints({ page, pageSize, recordId, search: searchParams.get("search") || undefined, month: searchParams.get("month") || undefined, project, privilege, provider: searchParams.get("provider") || undefined, bookingCode: searchParams.get("bookingCode") || undefined, receivedFrom, receivedTo, hasOpinion, status });
   return NextResponse.json(result);
 }
 

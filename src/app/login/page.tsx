@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ArrowRight, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, Loader2, LockKeyhole, Mail } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -36,7 +36,7 @@ export default function LoginPage() {
         <label className="block"><span className="mb-1.5 block text-sm font-medium text-slate-600">Email</span><span className="relative block"><Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="team@linkcare.vn" className="h-11 w-full rounded-xl border border-[#d7e2f1] pl-10 pr-3 text-sm outline-none focus:border-[#24618f] focus:ring-2 focus:ring-[#24618f]/15" /></span></label>
         <label className="block"><span className="mb-1.5 block text-sm font-medium text-slate-600">Mật khẩu</span><span className="relative block"><LockKeyhole className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Nhập mật khẩu" className="h-11 w-full rounded-xl border border-[#d7e2f1] pl-10 pr-3 text-sm outline-none focus:border-[#24618f] focus:ring-2 focus:ring-[#24618f]/15" /></span></label>
         {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
-        <button disabled={loading} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#24618f] text-sm font-semibold text-white transition hover:bg-[#1d527d] disabled:opacity-50">{loading ? "Đang xác thực..." : "Đăng nhập"}<ArrowRight className="h-4 w-4" /></button>
+        <button disabled={loading} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#24618f] text-sm font-semibold text-white transition hover:bg-[#1d527d] disabled:opacity-50">{loading ? <Loader2 className="h-4 w-4 animate-spin" aria-label="Đang xác thực" /> : <>Đăng nhập<ArrowRight className="h-4 w-4" /></>}</button>
       </form>
     </section>
   </main>;
