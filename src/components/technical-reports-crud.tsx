@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Bug, CheckCircle2, Download, FileUp, Loader2, Pencil, Plus, Search, Trash2, X, XCircle } from "lucide-react";
 import { TechnicalReportsStats } from "@/components/technical-reports-stats";
+import { recordActivityEvent } from "@/lib/activity-events";
 
 type Status = "Chưa xử lý" | "Đang xử lý" | "Hoàn thành";
 type TechnicalReport = { id: number; sequence: number; project: string; errorDescription: string; affectedSystem: string; reportTime: string; agentReported: string; itReceivedTime: string; itCompletedTime: string; handler: string; itResult: string; customerServiceTest: string; complaintEscalation: string; totalProcessingTime: string; status: Status };
@@ -167,12 +168,14 @@ export function TechnicalReportsCrud() {
     const response = await fetch(`/api/technical-reports/${row.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...row, status }) });
     if (!response.ok) { setToast({ message: "Không thể cập nhật trạng thái.", type: "error" }); return; }
     setRows((current) => current.map((item) => item.id === row.id ? { ...item, status } : item));
+    recordActivityEvent({ id: `technical:updated:${row.id}:${Date.now()}`, label: "Báo cáo lỗi kĩ thuật vừa được cập nhật", detail: `${row.project || "Không có dự án"} · ${status}`, time: "Vừa xong", tone: "blue", href: "/technical-reports", kind: "updated" });
     setToast({ message: "Đã cập nhật trạng thái.", type: "success" });
   }
   async function submit(event: FormEvent) {
     event.preventDefault(); setSaving(true);
     const response = await fetch(editingId ? `/api/technical-reports/${editingId}` : "/api/technical-reports", { method: editingId ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(form) });
     if (!response.ok) { const data = await response.json().catch(() => null); setToast({ message: data?.error || "Không thể lưu báo cáo.", type: "error" }); setSaving(false); return; }
+    recordActivityEvent({ id: `technical:${editingId ? "updated" : "created"}:${Date.now()}`, label: `Báo cáo lỗi kĩ thuật ${editingId ? "vừa được cập nhật" : "mới được tạo"}`, detail: `${form.project || "Không có dự án"} · ${form.affectedSystem || "Không có hệ thống"}`, time: "Vừa xong", tone: "blue", href: "/technical-reports", kind: editingId ? "updated" : "created" });
     setToast({ message: editingId ? "Đã cập nhật báo cáo kỹ thuật." : "Đã tạo báo cáo kỹ thuật.", type: "success" }); closeForm(); await load(); setSaving(false);
   }
   async function remove(row: TechnicalReport) {
@@ -180,6 +183,7 @@ export function TechnicalReportsCrud() {
     const response = await fetch(`/api/technical-reports/${row.id}`, { method: "DELETE" });
     if (!response.ok) { setToast({ message: "Không thể xóa báo cáo.", type: "error" }); return; }
     setToast({ message: "Đã xóa báo cáo kỹ thuật.", type: "delete" });
+    recordActivityEvent({ id: `technical:deleted:${row.id}:${Date.now()}`, label: "Báo cáo lỗi kĩ thuật đã bị xóa", detail: `${row.project || "Không có dự án"} · ${row.errorDescription || "Không có mô tả"}`, time: "Vừa xong", tone: "blue", href: "/technical-reports", kind: "deleted" });
     if (editingId === row.id) closeForm();
     await load();
   }
@@ -191,6 +195,7 @@ export function TechnicalReportsCrud() {
     const data = await response.json().catch(() => null);
     if (!response.ok) { setToast({ message: data?.error || "Không thể import Excel.", type: "error" }); return; }
     setToast({ message: `Đã import ${data.imported} case.`, type: "success" });
+    recordActivityEvent({ id: `technical:created:import:${Date.now()}`, label: "Báo cáo lỗi kĩ thuật mới được import", detail: `${data.imported} case`, time: "Vừa xong", tone: "blue", href: "/technical-reports", kind: "created" });
     await load(1);
   }
   async function exportFile() {

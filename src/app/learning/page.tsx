@@ -18,6 +18,15 @@ const covers: Record<string, string> = {
   teal: "from-[#259f98] to-[#14605e]",
   gold: "from-[#d89a38] to-[#8d581d]",
 };
+const projectCovers: Record<string, string> = {
+  BIDV: "from-[#ee9fb5] to-[#dd6f91]",
+  VietcomBank: "from-[#9edbb5] to-[#5fb984]",
+  VietinBank: "from-[#9fc6f0] to-[#5d98d9]",
+  TechcomBank: "from-[#f3aa91] to-[#df765d]",
+  UOB: "from-[#bfaee4] to-[#927bd0]",
+  TechcomLife: "from-[#91d8d3] to-[#4db7b1]",
+  Elite: "from-[#f0c77f] to-[#dca143]",
+};
 const projects = ["BIDV", "Vietcombank", "Vietinbank", "Techcombank", "UOB", "TechcomLife"];
 
 export default function LearningPage() {
@@ -128,9 +137,9 @@ export default function LearningPage() {
                 className="group overflow-hidden rounded-2xl border border-[#e3eaf2] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
                 <div
-                  className={`flex h-36 items-end bg-gradient-to-br p-5 ${covers[course.coverColor] || covers.blue}`}
+                  className={`learning-course-cover flex h-36 items-end bg-gradient-to-br p-5 ${projectCovers[course.title] || covers[course.coverColor] || covers.blue}`}
                 >
-                  <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white">
+                  <span className="relative z-10 rounded-full bg-white/65 px-2.5 py-1 text-xs font-medium text-[#173554]">
                     {course.category}
                   </span>
                 </div>

@@ -361,7 +361,18 @@ export function ComplaintsCrud() {
   }
   async function updateStatus(row: Complaint, status: string) {
     const response = await fetch(`/api/complaints/${row.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...row, status }) });
-    if (response.ok) { setRows((current) => current.map((item) => item.id === row.id ? { ...item, status } : item)); notify("Đã cập nhật trạng thái.", "success"); }
+    if (response.ok) {
+      setRows((current) => current.map((item) => item.id === row.id ? { ...item, status } : item));
+      try {
+        const key = "vip_booking_activity_events";
+        const events = JSON.parse(localStorage.getItem(key) || "[]") as Array<Record<string, unknown>>;
+        events.push({ id: `complaint:updated:${row.id}:${Date.now()}`, label: "Báo cáo khiếu nại vừa được cập nhật", detail: `${row.project || "Không có dự án"} · ${row.bookingCode || "Không có booking"} · ${status}`, time: "Vừa xong", tone: "coral", href: "/complaints", kind: "updated", timestamp: Date.now() });
+        localStorage.setItem(key, JSON.stringify(events.slice(-5)));
+      } catch {
+        // Activity feed remains best-effort if storage is unavailable.
+      }
+      notify("Đã cập nhật trạng thái.", "success");
+    }
     else notify("Không thể cập nhật trạng thái.", "error");
   }
 

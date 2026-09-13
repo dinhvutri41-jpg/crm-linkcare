@@ -1,0 +1,15 @@
+import { neon } from "@neondatabase/serverless";
+import { config } from "dotenv";
+config({ path: ".env.local" });
+const connectionString = process.env.CRM_DATABASE_URL;
+if (!connectionString) throw new Error("CRM_DATABASE_URL is required");
+const sql = neon(connectionString);
+await sql`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS program_name varchar(240) NOT NULL DEFAULT ''`;
+await sql`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS agent_steps text NOT NULL DEFAULT ''`;
+await sql`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS escalation_guidance text NOT NULL DEFAULT ''`;
+await sql`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS training_notes text NOT NULL DEFAULT ''`;
+await sql`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS question_level varchar(80) NOT NULL DEFAULT ''`;
+await sql`ALTER TABLE lessons ALTER COLUMN program_name TYPE text`;
+await sql`ALTER TABLE lessons ALTER COLUMN question_level TYPE text`;
+await sql`ALTER TABLE lessons ALTER COLUMN title TYPE text`;
+console.log("learning library columns are ready.");

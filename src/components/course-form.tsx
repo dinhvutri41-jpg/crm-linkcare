@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowLeft, House, Pencil, Plus, Trash2, X } from "lucide-react";
+import { recordActivityEvent } from "@/lib/activity-events";
 
 const projects = [
   "BIDV",
-  "Vietcombank",
-  "Vietinbank",
-  "Techcombank",
+  "VietcomBank",
+  "VietinBank",
+  "TechcomBank",
   "UOB",
   "TechcomLife",
+  "Elite",
 ];
-type Question = { question: string; answer: string };
+type Question = { question: string; answer: string; programName: string; agentSteps: string; escalationGuidance: string; trainingNotes: string; questionLevel: string };
 type Course = {
   id: number;
   title: string;
@@ -44,13 +46,14 @@ export function CourseForm() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<CourseFormValue>(emptyForm);
   const [questions, setQuestions] = useState<Question[]>([
-    { question: "", answer: "" },
+    { question: "", answer: "", programName: "", agentSteps: "", escalationGuidance: "", trainingNotes: "", questionLevel: "" },
   ]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const formCardRef = useRef<HTMLElement | null>(null);
 
   async function loadCourses() {
     setLoading(true);
@@ -73,26 +76,32 @@ export function CourseForm() {
     event.preventDefault();
     setSaving(true);
     setError("");
-    const response = await fetch(editingId ? `/api/courses/${editingId}` : "/api/courses", {
-      method: editingId ? "PATCH" : "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...form, questions }),
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      setError(data?.error || "Không thể tạo khóa học.");
+    try {
+      const response = await fetch(editingId ? `/api/courses/${editingId}` : "/api/courses", {
+        method: editingId ? "PATCH" : "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...form, questions }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        setError(data?.error || "Không thể tạo khóa học.");
+        return;
+      }
+      setForm(emptyForm);
+      setQuestions([{ question: "", answer: "", programName: "", agentSteps: "", escalationGuidance: "", trainingNotes: "", questionLevel: "" }]);
+      setEditingId(null);
+      setShowForm(false);
+      recordActivityEvent({ id: `course:${editingId ? "updated" : "created"}:${Date.now()}`, label: `Khóa học E-learning ${editingId ? "vừa được cập nhật" : "mới được tạo"}`, detail: form.title, time: "Vừa xong", tone: "mint", href: "/learning", kind: editingId ? "updated" : "created" });
+      setToast({
+        message: editingId ? "Đã cập nhật khóa học thành công." : "Đã tạo khóa học thành công.",
+        type: "success",
+      });
+      await loadCourses();
+    } catch {
+      setError("Không thể kết nối đến máy chủ.");
+    } finally {
       setSaving(false);
-      return;
     }
-    setForm(emptyForm);
-    setQuestions([{ question: "", answer: "" }]);
-    setEditingId(null);
-    setShowForm(false);
-    setToast({
-      message: editingId ? "Đã cập nhật khóa học thành công." : "Đã tạo khóa học thành công.",
-      type: "success",
-    });
-    await loadCourses();
   }
 
   async function editCourse(course: Course) {
@@ -102,12 +111,12 @@ export function CourseForm() {
       setError("Không thể tải khóa học để chỉnh sửa.");
       return;
     }
-    const data = await response.json() as Course & { lessons?: Array<{ title: string; content: string }> };
+    const data = await response.json() as Course & { lessons?: Array<{ title: string; content: string; programName?: string; agentSteps?: string; escalationGuidance?: string; trainingNotes?: string; questionLevel?: string }> };
     setEditingId(data.id);
     setShowForm(true);
     setForm({ title: data.title, description: data.description, category: data.category, level: data.level, coverColor: data.coverColor, agentSteps: data.agentSteps, escalationGuidance: data.escalationGuidance, trainingNotes: data.trainingNotes });
-    setQuestions(data.lessons?.length ? data.lessons.map((lesson) => ({ question: lesson.title, answer: lesson.content })) : [{ question: "", answer: "" }]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setQuestions(data.lessons?.length ? data.lessons.map((lesson) => ({ question: lesson.title, answer: lesson.content, programName: lesson.programName || "", agentSteps: lesson.agentSteps || "", escalationGuidance: lesson.escalationGuidance || "", trainingNotes: lesson.trainingNotes || "", questionLevel: lesson.questionLevel || "" })) : [{ question: "", answer: "", programName: "", agentSteps: "", escalationGuidance: "", trainingNotes: "", questionLevel: "" }]);
+    window.setTimeout(() => formCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   async function removeCourse(course: Course) {
@@ -120,10 +129,11 @@ export function CourseForm() {
     if (editingId === course.id) {
       setEditingId(null);
       setForm(emptyForm);
-      setQuestions([{ question: "", answer: "" }]);
+      setQuestions([{ question: "", answer: "", programName: "", agentSteps: "", escalationGuidance: "", trainingNotes: "", questionLevel: "" }]);
       setShowForm(false);
     }
     setToast({ message: "Đã xóa khóa học thành công.", type: "delete" });
+    recordActivityEvent({ id: `course:deleted:${course.id}:${Date.now()}`, label: "Khóa học E-learning đã bị xóa", detail: course.title, time: "Vừa xong", tone: "mint", href: "/learning", kind: "deleted" });
     await loadCourses();
   }
 
@@ -131,15 +141,16 @@ export function CourseForm() {
     setError("");
     setEditingId(null);
     setForm(emptyForm);
-    setQuestions([{ question: "", answer: "" }]);
+    setQuestions([{ question: "", answer: "", programName: "", agentSteps: "", escalationGuidance: "", trainingNotes: "", questionLevel: "" }]);
     setShowForm(true);
+    window.setTimeout(() => formCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   function closeForm() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
-    setQuestions([{ question: "", answer: "" }]);
+    setQuestions([{ question: "", answer: "", programName: "", agentSteps: "", escalationGuidance: "", trainingNotes: "", questionLevel: "" }]);
     setError("");
   }
 
@@ -200,7 +211,7 @@ export function CourseForm() {
             {loading ? <p className="py-6 text-sm text-slate-500">Đang tải danh sách...</p> : courses.length ? <table className="w-full min-w-[640px] text-left text-sm"><thead><tr className="border-b border-[#e3eaf2] text-xs uppercase tracking-wide text-slate-400"><th className="px-3 py-3">Tên khóa học</th><th className="px-3 py-3">Danh mục</th><th className="px-3 py-3">Cấp độ</th><th className="px-3 py-3 text-right">Thao tác</th></tr></thead><tbody>{courses.map((course) => <tr key={course.id} className="border-b border-[#edf1f5] last:border-0"><td className="px-3 py-3 font-semibold text-[#173554]">{course.title}</td><td className="px-3 py-3 text-slate-500">{course.category}</td><td className="px-3 py-3 text-slate-500">{course.level}</td><td className="px-3 py-3"><div className="flex justify-end gap-2"><button type="button" onClick={() => void editCourse(course)} className="inline-flex items-center gap-1 rounded-lg bg-[#eaf4fb] px-3 py-2 text-xs font-semibold text-[#24618f]"><Pencil className="h-3.5 w-3.5" /> Sửa</button><button type="button" onClick={() => void removeCourse(course)} className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600"><Trash2 className="h-3.5 w-3.5" /> Xóa</button></div></td></tr>)}</tbody></table> : <p className="py-6 text-sm text-slate-500">Chưa có khóa học nào.</p>}
           </div>
         </section>
-        {showForm ? <section className="order-1 mt-5 rounded-2xl border border-[#e3eaf2] bg-white p-6 shadow-sm sm:p-8">
+        {showForm ? <section ref={formCardRef} className="order-1 mt-5 rounded-2xl border border-[#e3eaf2] bg-white p-6 shadow-sm sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold text-[#173554]">
@@ -291,11 +302,6 @@ export function CourseForm() {
                 className="min-h-28 w-full rounded-lg border border-[#d7e2f1] p-3 text-sm"
               />
             </label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label><span className="mb-1.5 block text-sm font-medium text-slate-600">Các bước Agent cần thao tác/xử lý gì</span><textarea value={form.agentSteps} onChange={(event) => setForm({ ...form, agentSteps: event.target.value })} className="min-h-28 w-full rounded-lg border border-[#d7e2f1] p-3 text-sm" /></label>
-              <label><span className="mb-1.5 block text-sm font-medium text-slate-600">Khi nào cần báo Team Leader/Manager</span><textarea value={form.escalationGuidance} onChange={(event) => setForm({ ...form, escalationGuidance: event.target.value })} className="min-h-28 w-full rounded-lg border border-[#d7e2f1] p-3 text-sm" /></label>
-            </div>
-            <label><span className="mb-1.5 block text-sm font-medium text-slate-600">Ghi chú đào tạo</span><textarea value={form.trainingNotes} onChange={(event) => setForm({ ...form, trainingNotes: event.target.value })} className="min-h-28 w-full rounded-lg border border-[#d7e2f1] p-3 text-sm" /></label>
             <section className="border-t border-[#edf1f5] pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -309,7 +315,7 @@ export function CourseForm() {
                 <button
                   type="button"
                   onClick={() =>
-                    setQuestions([...questions, { question: "", answer: "" }])
+                    setQuestions([...questions, { question: "", answer: "", programName: "", agentSteps: "", escalationGuidance: "", trainingNotes: "", questionLevel: "" }])
                   }
                   className="inline-flex items-center gap-2 rounded-lg bg-[#eaf4fb] px-3 py-2 text-sm font-semibold text-[#24618f]"
                 >
@@ -343,6 +349,12 @@ export function CourseForm() {
                       ) : null}
                     </div>
                     <input
+                      value={item.programName}
+                      onChange={(event) => updateQuestion(index, "programName", event.target.value)}
+                      placeholder="Tên chương trình đặc quyền"
+                      className="mb-3 h-11 w-full rounded-lg border border-[#d7e2f1] bg-white px-3 text-sm"
+                    />
+                    <input
                       value={item.question}
                       onChange={(event) =>
                         updateQuestion(index, "question", event.target.value)
@@ -358,6 +370,12 @@ export function CourseForm() {
                       placeholder="Nhập câu trả lời"
                       className="mt-3 min-h-28 w-full rounded-lg border border-[#d7e2f1] bg-white p-3 text-sm"
                     />
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <textarea value={item.agentSteps} onChange={(event) => updateQuestion(index, "agentSteps", event.target.value)} placeholder="Các bước Agent cần thao tác/xử lý gì" className="min-h-24 w-full rounded-lg border border-[#d7e2f1] bg-white p-3 text-sm" />
+                      <textarea value={item.escalationGuidance} onChange={(event) => updateQuestion(index, "escalationGuidance", event.target.value)} placeholder="Khi nào cần báo Team Leader/Manager" className="min-h-24 w-full rounded-lg border border-[#d7e2f1] bg-white p-3 text-sm" />
+                      <textarea value={item.trainingNotes} onChange={(event) => updateQuestion(index, "trainingNotes", event.target.value)} placeholder="Ghi chú đào tạo" className="min-h-24 w-full rounded-lg border border-[#d7e2f1] bg-white p-3 text-sm" />
+                      <label><span className="mb-1.5 block text-sm font-medium text-slate-600">Cấp độ câu hỏi</span><select value={item.questionLevel} onChange={(event) => updateQuestion(index, "questionLevel", event.target.value)} className="h-11 w-full rounded-lg border border-[#d7e2f1] bg-white px-3 text-sm"><option value="">Chọn cấp độ</option><option value="KH mới">KH mới</option><option value="Cơ bản">Cơ bản</option><option value="Nâng cao">Nâng cao</option>{item.questionLevel && !["KH mới", "Cơ bản", "Nâng cao"].includes(item.questionLevel) ? <option value={item.questionLevel}>{item.questionLevel}</option> : null}</select></label>
+                    </div>
                   </div>
                 ))}
               </div>

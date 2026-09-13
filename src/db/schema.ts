@@ -32,7 +32,7 @@ export type NewComplaint = typeof complaints.$inferInsert;
 
 export const courses = pgTable("courses", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  title: varchar("title", { length: 240 }).notNull(),
+  title: text("title").notNull(),
   description: text("description").notNull().default(""),
   category: varchar("category", { length: 120 }).notNull().default("Đào tạo nội bộ"),
   level: varchar("level", { length: 40 }).notNull().default("Cơ bản"),
@@ -50,6 +50,11 @@ export const lessons = pgTable("lessons", {
   courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 240 }).notNull(),
   content: text("content").notNull().default(""),
+  programName: text("program_name").notNull().default(""),
+  agentSteps: text("agent_steps").notNull().default(""),
+  escalationGuidance: text("escalation_guidance").notNull().default(""),
+  trainingNotes: text("training_notes").notNull().default(""),
+  questionLevel: text("question_level").notNull().default(""),
   durationMinutes: integer("duration_minutes").notNull().default(10),
   position: integer("position").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -75,7 +80,20 @@ export const technicalReports = pgTable("technical_reports", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const meetingReports = pgTable("meeting_reports", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  team: varchar("team", { length: 200 }).notNull().default(""),
+  reportContent: text("report_content").notNull().default(""),
+  complaints: text("complaints").notNull().default(""),
+  proposal: text("proposal").notNull().default(""),
+  afterMeetingAction: text("after_meeting_action").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type TechnicalReport = typeof technicalReports.$inferSelect;
 export type NewTechnicalReport = typeof technicalReports.$inferInsert;
+export type MeetingReport = typeof meetingReports.$inferSelect;
+export type NewMeetingReport = typeof meetingReports.$inferInsert;

@@ -53,11 +53,6 @@ export default async function CoursePage({
               value={course.status === "published" ? "Đang mở" : "Bản nháp"}
             />
           </div>
-          <div className="grid gap-4 border-b border-[#edf1f5] p-6 md:grid-cols-3">
-            <InfoBlock label="Các bước Agent cần thao tác/xử lý gì" value={course.agentSteps} />
-            <InfoBlock label="Khi nào cần báo Team Leader/Manager" value={course.escalationGuidance} />
-            <InfoBlock label="Ghi chú đào tạo" value={course.trainingNotes} />
-          </div>
           <div className="p-6">
             <h2 className="text-xl font-semibold text-[#173554]">
               Nội dung khóa học
@@ -94,6 +89,3 @@ function Info({
   );
 }
 
-function InfoBlock({ label, value }: { label: string; value: string }) {
-  return <section className="rounded-xl bg-[#f8fbfd] p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</h3><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{value || "Chưa có nội dung"}</p></section>;
-}

@@ -6,15 +6,15 @@ import {
   Bell,
   BarChart3,
   Bug,
+  ClipboardList,
   ChevronRight,
-  Database,
   FileWarning,
   GraduationCap,
   LayoutDashboard,
   Loader2,
   LogOut,
   Menu,
-  Settings,
+  Users,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -36,9 +36,11 @@ const LAST_ACTIVITY_KEY = "linkcare_last_activity";
 
 const navigation = [
   { href: "/", label: "Tổng quan", icon: LayoutDashboard },
+  { href: "/about-us", label: "Đội ngũ", icon: Users },
   { href: "/complaints", label: "Báo cáo khiếu nại", icon: FileWarning },
   { href: "/technical-reports", label: "Báo cáo lỗi kĩ thuật", icon: Bug },
   { href: "/learning", label: "E-learning", icon: GraduationCap },
+  { href: "/meeting-reports", label: "Báo cáo giao ban", icon: ClipboardList },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -194,17 +196,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <p className="px-3 pb-3 pt-9 text-[10px] font-semibold uppercase tracking-[.18em] text-blue-200/50">
-            Hệ thống
-          </p>
-          <div className="space-y-1">
-            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-blue-100/50">
-              <Database className="h-[18px] w-[18px]" /> Kết nối dữ liệu
-            </button>
-            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-blue-100/50">
-              <Settings className="h-[18px] w-[18px]" /> Cài đặt
-            </button>
-          </div>
         </div>
         <div className="border-t border-white/10 px-5 py-5">
           <div className="flex items-center gap-3">
@@ -235,20 +226,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div>
               <p className="text-xs font-medium text-slate-400">
                 VIP BOOKING 24H /{" "}
-                {pathname === "/complaints" ? "Báo cáo khiếu nại" : pathname === "/technical-reports" ? "Báo cáo lỗi kĩ thuật" : pathname.startsWith("/learning") ? "E-learning" : "Tổng quan"}
+                {pathname === "/complaints" ? "Báo cáo khiếu nại" : pathname === "/technical-reports" ? "Báo cáo lỗi kĩ thuật" : pathname.startsWith("/learning") ? "E-learning" : pathname === "/about-us" ? "Đội ngũ" : "Tổng quan"}
               </p>
               <h1 className="mt-0.5 text-lg font-semibold text-[#173554]">
                 {pathname === "/complaints"
                   ? "Quản lý khiếu nại"
-                  : pathname === "/technical-reports" ? "Báo cáo lỗi kĩ thuật" : pathname.startsWith("/learning") ? "Đào tạo nội bộ" : "Tổng quan vận hành"}
+                  : pathname === "/technical-reports" ? "Báo cáo lỗi kĩ thuật" : pathname.startsWith("/learning") ? "Đào tạo nội bộ" : pathname === "/about-us" ? "Sơ đồ tổ chức" : "Tổng quan vận hành"}
               </h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden items-center gap-2 rounded-full bg-[#edf8f2] px-3 py-1.5 text-xs font-medium text-[#28744a] sm:flex">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#3cb371]" />{" "}
-              Database connected
-            </span>
             <button
               type="button"
               onClick={() => setNotificationOpen((value) => !value)}

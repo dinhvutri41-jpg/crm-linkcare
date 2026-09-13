@@ -1,22 +1,17 @@
 import Link from "next/link";
 import {
   ArrowUpRight,
-  BellRing,
   BookOpen,
   ChevronRight,
-  Clock3,
   FileWarning,
   Plus,
   Sparkles,
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-
-const activity = [
-  { label: "Khiếu nại mới", detail: "Vietcombank · 08:42", tone: "coral", icon: FileWarning },
-  { label: "Khóa học được cập nhật", detail: "Đào tạo nội bộ · 09:15", tone: "mint", icon: BookOpen },
-  { label: "Ý kiến quản lý cần xử lý", detail: "3 record đang chờ", tone: "amber", icon: BellRing },
-];
+import { ActivityFeed } from "@/components/activity-feed";
+import { ComplaintsOpenMetric } from "@/components/complaints-open-metric";
+import { CoursesCountMetric } from "@/components/courses-count-metric";
 
 export function Overview() {
   return (
@@ -44,15 +39,15 @@ export function Overview() {
         </section>
 
         <section className="-mt-7 relative z-10 grid gap-4 px-3 sm:grid-cols-3 sm:px-7">
-          <Metric icon={<FileWarning />} label="Khiếu nại đang xử lý" value="18" change="-8.2%" tone="coral" />
-          <Metric icon={<BookOpen />} label="Bài học nội bộ" value="24" change="+16.5%" tone="mint" />
-          <Metric icon={<Users />} label="Đội ngũ hoạt động" value="32" change="+4.8%" tone="amber" />
+          <ComplaintsOpenMetric />
+          <CoursesCountMetric />
+          <Link href="/about-us" className="overview-metric block rounded-2xl border border-[#e0e8ef] bg-white p-4 shadow-[0_12px_30px_rgba(26,62,95,.08)] transition hover:-translate-y-1 hover:shadow-lg"><div className="flex items-center justify-between"><span className="overview-metric-icon overview-metric-amber"><Users /></span><span className="text-xs font-bold text-[#c98b36]">Đội ngũ</span></div><p className="mt-4 text-xs text-slate-500">Đội ngũ hoạt động</p><p className="mt-1 text-2xl font-semibold tracking-tight text-[#173554]">36</p></Link>
         </section>
 
         <section className="mt-8 grid gap-5 lg:grid-cols-[1.15fr_.85fr]">
           <div className="rounded-2xl border border-[#e0e8ef] bg-white p-5 shadow-[0_12px_35px_rgba(26,62,95,.05)] sm:p-6">
             <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-[#5b9bc0]">Today at VIP BOOKING 24H</p><h3 className="mt-1.5 text-xl font-semibold text-[#173554]">Dòng hoạt động</h3></div><Link href="/complaints" className="text-xs font-semibold text-[#24618f]">Xem tất cả <ChevronRight className="inline h-3.5 w-3.5" /></Link></div>
-            <div className="mt-6 space-y-3">{activity.map((item) => { const Icon = item.icon; return <div key={item.label} className="group flex items-center gap-3 rounded-xl border border-transparent p-2 transition hover:border-[#e1ebf2] hover:bg-[#f8fbfd]"><span className={`overview-activity-icon overview-activity-${item.tone}`}><Icon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#24415e]">{item.label}</p><p className="mt-0.5 text-xs text-slate-400">{item.detail}</p></div><Clock3 className="h-4 w-4 text-slate-300" /></div>; })}</div>
+            <ActivityFeed />
           </div>
           <div className="rounded-2xl bg-[#fff8f0] p-5 shadow-[0_12px_35px_rgba(140,83,35,.06)] sm:p-6">
             <div className="flex items-start justify-between"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-[#c68242]">Quick start</p><h3 className="mt-1.5 text-xl font-semibold text-[#4c3122]">Điểm đến hôm nay</h3></div><span className="rounded-xl bg-white p-2.5 text-[#d88632] shadow-sm"><ArrowUpRight className="h-5 w-5" /></span></div>
