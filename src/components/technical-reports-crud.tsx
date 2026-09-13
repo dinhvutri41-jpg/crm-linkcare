@@ -80,7 +80,6 @@ export function TechnicalReportsCrud() {
   const [toast, setToast] = useState<Toast | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef(false);
-  const tableScrollerRef = useRef<HTMLDivElement | null>(null);
 
   async function load(nextPage = 1) {
     if (loadingRef.current) return;
@@ -124,42 +123,6 @@ export function TechnicalReportsCrud() {
     observer.observe(target);
     return () => observer.disconnect();
   }, [loading, loadingMore, page, rows.length, total, search, projectFilter, statusFilter, reportFrom, reportTo]);
-  useEffect(() => {
-    const scroller = document.querySelector("table")?.parentElement as HTMLDivElement | null;
-    if (!scroller) return;
-    tableScrollerRef.current = scroller;
-    scroller.style.cursor = "grab";
-    scroller.style.touchAction = "pan-y";
-    const drag = { active: false, startX: 0, scrollLeft: 0 };
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
-      drag.active = true;
-      drag.startX = event.clientX;
-      drag.scrollLeft = scroller.scrollLeft;
-      scroller.setPointerCapture(event.pointerId);
-      scroller.style.cursor = "grabbing";
-    };
-    const onPointerMove = (event: PointerEvent) => {
-      if (!drag.active) return;
-      event.preventDefault();
-      scroller.scrollLeft = drag.scrollLeft - (event.clientX - drag.startX);
-    };
-    const stopDragging = () => {
-      drag.active = false;
-      scroller.style.cursor = "grab";
-    };
-    scroller.addEventListener("pointerdown", onPointerDown);
-    scroller.addEventListener("pointermove", onPointerMove);
-    scroller.addEventListener("pointerup", stopDragging);
-    scroller.addEventListener("pointercancel", stopDragging);
-    return () => {
-      scroller.removeEventListener("pointerdown", onPointerDown);
-      scroller.removeEventListener("pointermove", onPointerMove);
-      scroller.removeEventListener("pointerup", stopDragging);
-      scroller.removeEventListener("pointercancel", stopDragging);
-    };
-  }, [rows.length]);
-
   function update(key: keyof ReportForm, value: string) { setForm((current) => ({ ...current, [key]: key === "sequence" ? Number(value) || 0 : value })); }
   function openCreate() { setEditingId(null); setForm({ ...emptyForm, sequence: rows.length + 1 }); setShowForm(true); }
   function closeForm() { setShowForm(false); setEditingId(null); setForm(emptyForm); }
