@@ -55,5 +55,27 @@ export const lessons = pgTable("lessons", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const technicalReports = pgTable("technical_reports", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  sequence: integer("sequence").notNull().default(0),
+  project: varchar("project", { length: 200 }).notNull().default(""),
+  errorDescription: text("error_description").notNull().default(""),
+  affectedSystem: varchar("affected_system", { length: 240 }).notNull().default(""),
+  reportTime: text("report_time").notNull().default(""),
+  agentReported: text("agent_reported").notNull().default(""),
+  itReceivedTime: text("it_received_time").notNull().default(""),
+  itCompletedTime: text("it_completed_time").notNull().default(""),
+  handler: varchar("handler", { length: 200 }).notNull().default(""),
+  itResult: text("it_result").notNull().default(""),
+  customerServiceTest: text("customer_service_test").notNull().default(""),
+  complaintEscalation: text("complaint_escalation").notNull().default(""),
+  totalProcessingTime: text("total_processing_time").notNull().default(""),
+  status: varchar("status", { length: 30 }).notNull().default("Chưa xử lý"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
+export type TechnicalReport = typeof technicalReports.$inferSelect;
+export type NewTechnicalReport = typeof technicalReports.$inferInsert;

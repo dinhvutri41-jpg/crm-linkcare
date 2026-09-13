@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   BarChart3,
+  Bug,
   ChevronRight,
   Database,
   FileWarning,
@@ -35,7 +36,8 @@ const LAST_ACTIVITY_KEY = "linkcare_last_activity";
 
 const navigation = [
   { href: "/", label: "Tổng quan", icon: LayoutDashboard },
-  { href: "/complaints", label: "Khiếu nại", icon: FileWarning },
+  { href: "/complaints", label: "Báo cáo khiếu nại", icon: FileWarning },
+  { href: "/technical-reports", label: "Báo cáo lỗi kĩ thuật", icon: Bug },
   { href: "/learning", label: "E-learning", icon: GraduationCap },
 ] as const;
 
@@ -150,7 +152,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <span>
               <strong className="block text-[15px] tracking-wide">
-                LinkCare
+                VIP BOOKING 24H
               </strong>
               <small className="block text-[10px] uppercase tracking-[.2em] text-blue-200/70">
                 CRM workspace
@@ -209,7 +211,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#d9edf9] text-sm font-bold text-[#1d5f8f]">
               TV
             </div>
-            <div className="min-w-0"><p className="truncate text-sm font-semibold">LinkCare team</p><p className="truncate text-xs text-blue-100/50">Operations</p></div><button onClick={() => void logout()} className="ml-auto rounded-lg p-2 text-blue-100/60 hover:bg-white/10 hover:text-white" aria-label="Đăng xuất"><LogOut className="h-4 w-4" /></button>
+            <div className="min-w-0"><p className="truncate text-sm font-semibold">VIP BOOKING 24H team</p><p className="truncate text-xs text-blue-100/50">Operations</p></div><button onClick={() => void logout()} className="ml-auto rounded-lg p-2 text-blue-100/60 hover:bg-white/10 hover:text-white" aria-label="Đăng xuất"><LogOut className="h-4 w-4" /></button>
           </div>
         </div>
       </aside>
@@ -232,13 +234,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
             <div>
               <p className="text-xs font-medium text-slate-400">
-                LinkCare CRM /{" "}
-                {pathname === "/complaints" ? "Khiếu nại" : pathname.startsWith("/learning") ? "E-learning" : "Tổng quan"}
+                VIP BOOKING 24H /{" "}
+                {pathname === "/complaints" ? "Báo cáo khiếu nại" : pathname === "/technical-reports" ? "Báo cáo lỗi kĩ thuật" : pathname.startsWith("/learning") ? "E-learning" : "Tổng quan"}
               </p>
               <h1 className="mt-0.5 text-lg font-semibold text-[#173554]">
                 {pathname === "/complaints"
                   ? "Quản lý khiếu nại"
-                  : pathname.startsWith("/learning") ? "Đào tạo nội bộ" : "Tổng quan vận hành"}
+                  : pathname === "/technical-reports" ? "Báo cáo lỗi kĩ thuật" : pathname.startsWith("/learning") ? "Đào tạo nội bộ" : "Tổng quan vận hành"}
               </h1>
             </div>
           </div>
@@ -329,7 +331,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="relative my-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="notification-detail-title">
                 <div className="flex items-center justify-between border-b border-[#e6edf3] px-5 py-4"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-amber-600">Chi tiết thông báo</p><h2 id="notification-detail-title" className="mt-1 text-xl font-semibold text-[#173554]">{selectedNotification.project} · {selectedNotification.bookingCode || "Không có booking"}</h2></div><button onClick={() => closeNotificationDetail()} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Đóng chi tiết"><X className="h-5 w-5" /></button></div>
                 <div className="space-y-4 px-5 py-5 text-sm"><div className="grid gap-3 sm:grid-cols-2"><Info label="Dự án" value={selectedNotification.project} /><Info label="Mã booking" value={selectedNotification.bookingCode || "Không có"} /><Info label="Ngày tiếp nhận" value={selectedNotification.receivedDate} /><Info label="Khách hàng" value={selectedNotification.customer || "Không có"} /></div>{selectedNotification.teamLeaderOpinion.trim() ? <section className="rounded-xl bg-[#fff9db] p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-amber-900">Ý kiến Team Leader</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-amber-950">{selectedNotification.teamLeaderOpinion}</p></section> : null}{selectedNotification.managementOpinion.trim() ? <section className="rounded-xl bg-[#e7f5ff] p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-sky-900">Ý kiến quản lý</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-sky-950">{selectedNotification.managementOpinion}</p></section> : null}<section><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nội dung khiếu nại</h3><p className="mt-2 whitespace-pre-wrap leading-6 text-slate-700">{selectedNotification.complaintContent || "Không có nội dung"}</p></section></div>
-                <div className="flex justify-end gap-2 border-t border-[#e6edf3] px-5 py-4"><button onClick={() => closeNotificationDetail()} className="rounded-lg border border-[#d7e2f1] px-4 py-2 text-sm font-medium text-slate-600">Đóng</button><button onClick={() => void resolveNotification()} disabled={resolving} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{resolving ? <Loader2 className="h-4 w-4 animate-spin" aria-label="Đang cập nhật" /> : "Đã resolve"}</button></div>
+                <div className="flex justify-end gap-2 border-t border-[#e6edf3] px-5 py-4"><button onClick={() => closeNotificationDetail()} className="rounded-lg border border-[#d7e2f1] px-4 py-2 text-sm font-medium text-slate-600">Review case</button><button onClick={() => void resolveNotification()} disabled={resolving} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{resolving ? <Loader2 className="h-4 w-4 animate-spin" aria-label="Đang cập nhật" /> : "Đã xử lý"}</button></div>
               </div>
             </div>
           ) : null}

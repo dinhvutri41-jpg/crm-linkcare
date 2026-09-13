@@ -87,6 +87,7 @@ const projects = [
   "Techcombank",
   "UOB",
   "TechcomLife",
+  "Elite",
 ];
 const privileges = [
   "Phòng chờ trong nước",
@@ -305,7 +306,6 @@ export function ComplaintsCrud() {
       return;
     }
     const response = await fetch(`/api/complaints?${query}`);
-    if (page > 1) await new Promise((resolve) => window.setTimeout(resolve, 1200));
     if (response.ok) {
       const data: ListResult = await response.json();
       setRows((current) => page === 1 ? data.rows : [...current, ...data.rows]);
@@ -475,7 +475,7 @@ export function ComplaintsCrud() {
               onClick={() => setDraft(blankComplaint())}
               className="inline-flex items-center gap-2 rounded-xl bg-[#24618f] px-4 py-2.5 text-sm font-semibold text-white"
             >
-              <Plus className="h-4 w-4" /> Tạo record
+              <Plus className="h-4 w-4" /> Tạo case mới
             </button>
             <button
               onClick={() => void exportFile()}
@@ -487,7 +487,7 @@ export function ComplaintsCrud() {
               onClick={() => setReportOpen(true)}
               className="inline-flex items-center gap-2 rounded-xl border border-[#d7e2f1] bg-white px-4 py-2.5 text-sm font-semibold text-[#24618f]"
             >
-              <BarChart3 className="h-4 w-4" /> Show report
+              <BarChart3 className="h-4 w-4" /> Xem báo cáo
             </button>
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#d7e2f1] bg-white px-4 py-2.5 text-sm font-semibold text-[#24618f]">
               <FileUp className="h-4 w-4" /> Import

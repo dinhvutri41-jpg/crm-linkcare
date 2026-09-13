@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { BookOpen, Clock3, GraduationCap, Plus, Trash2, X } from "lucide-react";
+import { BookOpen, Clock3, GraduationCap, House, Plus, Trash2, X } from "lucide-react";
 
 type Course = {
   id: number;
@@ -73,11 +73,14 @@ export default function LearningPage() {
   return (
     <main className="min-h-[calc(100vh-76px)] bg-[#f4f7fb]">
       <div className="mx-auto max-w-[1380px] px-5 py-8 sm:px-8">
-        <div className="learning-hero relative mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div className="learning-rocket-scroll-layer" aria-hidden="true">
-            <img src="/rocket.svg" alt="" className="learning-rocket-scroll-logo" />
-          </div>
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
+            <Link
+              href="/"
+              className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-[#24618f]"
+            >
+              <House className="h-4 w-4" /> Trang chủ
+            </Link>
             <p className="text-sm font-medium text-[#4a91c3]">
               Learning workspace
             </p>
